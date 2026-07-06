@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="kaa">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>QAR - Arenda (SQLite)</title>
+    <!-- Подключаем sql.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    <style>
+        /* ===== ВСЕ СТИЛИ (без изменений) ===== */
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body { font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f0f2f5; min-height:100vh; color:#202124; line-height:1.5; padding-bottom:80px; }
+        .container { max-width:430px; margin:0 auto; padding:0 16px; }
+        .hidden { display:none !important; }
+        .header { background:linear-gradient(135deg,#1a73e8,#4285f4); padding:20px 16px 28px; border-radius:0 0 20px 20px; margin:0 -16px 16px; color:#fff; }
+        .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+        .logo { font-size:28px; font-weight:800; letter-spacing:-1px; }
+        .logo span { color:#ffeb3b; }
+        .header-title { font-size:22px; font-weight:700; }
+        .header-sub { font-size:14px; opacity:0.85; }
+        .card { background:#fff; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 1px 3px rgba(60,64,67,0.08),0 4px 12px rgba(60,64,67,0.08); }
+        .card-title { font-size:18px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+        .form-group { margin-bottom:16px; }
+        .form-label { display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:#5f6368; }
+        .form-input, .form-select, .form-textarea { width:100%; padding:14px 16px; border:2px solid #dadce0; border-radius:8px; font-size:16px; font-family:inherit; background:#fff; transition:all .2s; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline:none; border-color:#1a73e8; box-shadow:0 0 0 3px #e8f0fe; }
+        .form-textarea { min-height:80px; resize:vertical; }
+        .btn { width:100%; padding:16px; border:none; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; transition:all .2s; text-align:center; }
+        .btn-primary { background:linear-gradient(135deg,#1a73e8,#4285f4); color:#fff; }
+        .btn-success { background:linear-gradient(135deg,#00c853,#00e676); color:#fff; }
+        .btn-secondary { background:#f0f2f5; color:#5f6368; border:2px solid #dadce0; }
+        .btn-danger { background:linear-gradient(135deg,#ea4335,#f44336); color:#fff; }
+        .mt-1 { margin-top:10px; }
+        .mt-2 { margin-top:16px; }
+        .step-track { display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom:20px; }
+        .step-dot { width:32px; height:32px; border-radius:50%; background:#e8eaed; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#5f6368; }
+        .step-dot.active { background:#1a73e8; color:#fff; }
+        .step-dot.completed { background:#00c853; color:#fff; }
+        .step-line { flex:1; height:3px; background:#e8eaed; max-width:40px; border-radius:2px; }
+        .step-line.completed { background:#00c853; }
+        .upload-card { background:#f8f9fa; border:2px dashed #dadce0; border-radius:12px; padding:32px 20px; text-align:center; cursor:pointer; position:relative; }
+        .upload-card input { position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+        .upload-preview { width:100%; border-radius:8px; margin-top:12px; display:none; }
+        .upload-preview.show { display:block; }
+        .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-100px); background:#323232; color:#fff; padding:14px 24px; border-radius:8px; font-weight:600; z-index:999; max-width:90%; text-align:center; transition:all .3s; opacity:0; }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+        .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#fff; display:flex; justify-content:space-around; padding:8px 0 20px; box-shadow:0 -2px 12px rgba(0,0,0,0.08); z-index:100; border-radius:16px 16px 0 0; }
+        .nav-item { text-align:center; color:#9aa0a6; font-size:11px; font-weight:600; cursor:pointer; padding:4px 12px; }
+        .nav-item.active { color:#1a73e8; }
+        .nav-item .nav-icon { font-size:22px; display:block; margin-bottom:2px; }
+        .item-card { background:#fff; border-radius:16px; overflow:hidden; margin-bottom:16px; box-shadow:0 1px 3px rgba(60,64,67,0.08); }
+        .item-image { width:100%; height:180px; object-fit:cover; }
+        .item-body { padding:16px; }
+        .item-title { font-size:16px; font-weight:700; margin-bottom:6px; }
+        .item-price { font-size:20px; font-weight:800; color:#1a73e8; }
+        .item-price span { font-size:13px; font-weight:500; color:#5f6368; }
+        .item-meta { display:flex; gap:12px; font-size:13px; color:#5f6368; margin:8px 0; }
+        .stars { color:#fbbc04; font-size:18px; letter-spacing:2px; }
+        .rental-card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; display:flex; align-items:center; gap:14px; box-shadow:0 1px 3px rgba(60,64,67,0.08); }
+        .rental-info { flex:1; }
+        .rental-name { font-weight:700; }
+        .rental-timer .time { font-size:20px; font-weight:800; color:#ea4335; font-family:monospace; }
+        .rental-timer .label { font-size:10px; color:#9aa0a6; }
+        .tx-card { display:flex; align-items:center; gap:12px; padding:12px 16px; background:#fff; border-radius:12px; margin-bottom:8px; box-shadow:0 1px 3px rgba(60,64,67,0.08); }
+        .tx-icon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+        .tx-icon.in { background:#e8f5e9; color:#2e7d32; }
+        .tx-icon.out { background:#ffebee; color:#c62828; }
+        .tx-icon.fee { background:#fff3e0; color:#ef6c00; }
+        .tx-info { flex:1; }
+        .tx-title { font-weight:600; font-size:14px; }
+        .tx-date { font-size:11px; color:#9aa0a6; }
+        .tx-amount { font-weight:800; font-size:15px; }
+        .tx-amount.in { color:#00c853; }
+        .tx-amount.out { color:#ea4335; }
+        .tx-amount.fee { color:#ff6d00; }
+        .kashalok-card { background:linear-gradient(135deg,#1a73e8,#4285f4); border-radius:16px; padding:24px; color:#fff; margin-bottom:16px; }
+        .kashalok-amount { font-size:32px; font-weight:800; }
+        .kashalok-sub { font-size:12px; opacity:0.85; margin-top:4px; }
+        .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+        .badge-green { background:#e8f5e9; color:#2e7d32; }
+        .badge-red { background:#ffebee; color:#c62828; }
+        .badge-orange { background:#fff3e0; color:#ef6c00; }
+        .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); display:none; align-items:flex-end; justify-content:center; z-index:500; }
+        .modal-overlay.show { display:flex; }
+        .modal-sheet { background:#fff; border-radius:20px 20px 0 0; padding:24px 20px; width:100%; max-width:430px; animation:slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+        .modal-title { font-size:20px; font-weight:800; margin-bottom:20px; }
+        .verify-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; background:#e8f5e9; color:#2e7d32; }
+        .verify-badge.pending { background:#fff3e0; color:#ef6c00; }
+        .profile-avatar { width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#1a73e8,#4285f4); display:flex; align-items:center; justify-content:center; color:#fff; font-size:24px; font-weight:700; }
+        .flex { display:flex; align-items:center; gap:12px; }
+        .flex-between { display:flex; justify-content:space-between; align-items:center; }
+        .gap-8 { gap:8px; }
+        .text-center { text-align:center; }
+        .text-secondary { color:#5f6368; font-size:14px; }
+        .mb-2 { margin-bottom:16px; }
+        .pills { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch; }
+        .pills::-webkit-scrollbar { display:none; }
+        .pill { background:#fff; border:2px solid #dadce0; border-radius:24px; padding:8px 18px; font-size:13px; font-weight:600; color:#5f6368; white-space:nowrap; cursor:pointer; }
+        .pill.active { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+        .hero { background:linear-gradient(135deg,#1a73e8,#4285f4); padding:40px 24px; border-radius:0 0 24px 24px; margin:0 -16px 20px; text-align:center; color:#fff; }
+        .hero h1 { font-size:36px; font-weight:800; }
+        .hero h1 span { color:#ffeb3b; }
+        .hero p { opacity:0.9; margin:8px 0 20px; }
+        .hero-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+        .hero-stat { background:rgba(255,255,255,0.12); border-radius:12px; padding:12px; }
+        .hero-stat-value { font-size:20px; font-weight:800; }
+        .hero-stat-label { font-size:11px; opacity:0.85; }
+        .camera-box { background:linear-gradient(135deg,#1a1a2e,#2d2d44); border-radius:16px; padding:24px; text-align:center; color:#fff; margin-bottom:16px; }
+        .camera-frame { width:140px; height:180px; border:3px dashed rgba(255,255,255,0.3); border-radius:12px; margin:16px auto; display:flex; align-items:center; justify-content:center; flex-direction:column; }
+        .camera-btn { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:12px 28px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; margin-top:12px; }
+        .admin-card { background:#fff3e0; border-left:4px solid #ff6d00; padding:16px; border-radius:8px; margin-bottom:12px; }
+        .admin-card .title { font-weight:700; color:#e65100; }
+    </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<div class="container" id="app">
+
+    <!-- ========= LOGIN ========= -->
+    <div id="loginScreen">
+        <div class="hero">
+            <h1>Q<span>AR</span></h1>
+            <p>Zatlardi arendaga beriw ham aliw</p>
+            <div class="hero-stats">
+                <div class="hero-stat"><div class="hero-stat-value">500+</div><div class="hero-stat-label">Zatlar</div></div>
+                <div class="hero-stat"><div class="hero-stat-value">200+</div><div class="hero-stat-label">Paydalanıwshı</div></div>
+                <div class="hero-stat"><div class="hero-stat-value">5%</div><div class="hero-stat-label">Komissiya</div></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">🔐 Akkauntka kiriw</div>
+            <div class="form-group">
+                <label class="form-label">Telefon nomer</label>
+                <input type="tel" class="form-input" id="loginPhone" placeholder="+998 90 123 45 67" value="+998 90 123 45 67">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Parol</label>
+                <input type="password" class="form-input" id="loginPass" placeholder="••••••" value="123456">
+            </div>
+            <button class="btn btn-primary" onclick="app.login()">Kiriw</button>
+            <button class="btn btn-secondary mt-1" onclick="app.showScreen('step1Screen')">Jana akkaunt jaratiw</button>
+            <button class="btn btn-secondary mt-1" onclick="app.showScreen('adminLoginScreen')">👑 Admin</button>
+        </div>
+    </div>
+
+    <!-- ========= ADMIN LOGIN ========= -->
+    <div id="adminLoginScreen" class="hidden">
+        <div class="header"><div class="header-top"><div class="logo">Q<span>AR</span> Admin</div></div></div>
+        <div class="card">
+            <div class="card-title">👑 Admin kiriw</div>
+            <div class="form-group"><label class="form-label">Admin nomer</label><input type="text" class="form-input" id="adminLogin" value="admin"></div>
+            <div class="form-group"><label class="form-label">Parol</label><input type="password" class="form-input" id="adminPass" value="admin123"></div>
+            <button class="btn btn-primary" onclick="app.adminLogin()">Kiriw</button>
+            <button class="btn btn-secondary mt-1" onclick="app.showScreen('loginScreen')">← Artqa</button>
+        </div>
+    </div>
+
+    <!-- ========= STEP 1 ========= -->
+    <div id="step1Screen" class="hidden">
+        <div class="header"><div class="header-top"><div class="logo">Q<span>AR</span></div></div><div class="header-title">Registraciya</div><div class="header-sub">1-qadam / 5</div></div>
+        <div class="step-track"><div class="step-dot active">1</div><div class="step-line"></div><div class="step-dot">2</div><div class="step-line"></div><div class="step-dot">3</div><div class="step-line"></div><div class="step-dot">4</div><div class="step-line"></div><div class="step-dot">5</div></div>
+        <div class="card">
+            <div class="card-title">✏️ Negizgi magliwmatlar</div>
+            <div class="form-group"><label class="form-label">Toliq atıńız *</label><input type="text" class="form-input" id="regName" placeholder="M: Temirbekov Alibek"></div>
+            <div class="form-group"><label class="form-label">Telefon nomer *</label><input type="tel" class="form-input" id="regPhone" placeholder="+998 90 123 45 67"></div>
+            <div class="form-group"><label class="form-label">Qala / Rayon *</label>
+                <select class="form-select" id="regCity">
+                    <option value="Nokis">Nokis</option><option value="Qonirat">Qonirat</option><option value="Xojeli">Xojeli</option>
+                    <option value="Shomanay">Shomanay</option><option value="Mangit">Mangit</option><option value="Beruniy">Beruniy</option>
+                    <option value="Taqtaqopir">Taqtaqopir</option><option value="Qaraozek">Qaraozek</option><option value="Kegeyli">Kegeyli</option>
+                    <option value="Qanlikol">Qanlikol</option><option value="Moynaq">Moynaq</option><option value="Amudarya">Amudarya</option>
+                    <option value="Tortkul">Tortkul</option><option value="Shimbay">Shimbay</option>
+                </select>
+            </div>
+            <div class="form-group"><label class="form-label">Toliq manzil *</label><textarea class="form-textarea" id="regAddress" placeholder="M: Dosnazarov koshesi, 15-uy"></textarea></div>
+            <div class="form-group"><label class="form-label">Parol *</label><input type="password" class="form-input" id="regPass" placeholder="Minimum 6 tanba"></div>
+            <button class="btn btn-primary" onclick="app.nextStep(2)">Dawi etiw →</button>
+            <button class="btn btn-secondary mt-1" onclick="app.showScreen('loginScreen')">← Artqa</button>
+        </div>
+    </div>
+
+    <!-- ========= STEP 2 ========= -->
+    <div id="step2Screen" class="hidden">
+        <div class="header"><div class="header-top"><div class="logo">Q<span>AR</span></div></div><div class="header-title">Registraciya</div><div class="header-sub">2-qadam / 5</div></div>
+        <div class="step-track"><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot active">2</div><div class="step-line"></div><div class="step-dot">3</div><div class="step-line"></div><div class="step-dot">4</div><div class="step-line"></div><div class="step-dot">5</div></div>
+        <div class="card">
+            <div class="card-title">📄 Pasport fotosın júkleń</div>
+            <p class="text-secondary mb-2">Pasportıńızdıń tolıq betin túsiriń. Seriya, nomer, atı-janı anıq kórinisi kerek.</p>
+            <div class="upload-card">
+                <div style="font-size:40px">📤</div>
+                <div style="font-weight:700">Basıp, pasport fotosın tańlań</div>
+                <div style="font-size:13px;color:#5f6368">JPG yamasa PNG, max 5MB</div>
+                <input type="file" accept="image/*" onchange="app.previewPassport(this)">
+            </div>
+            <img id="passportPreview" class="upload-preview">
+            <button class="btn btn-primary mt-2" onclick="app.nextStep(3)">Dawi etiw →</button>
+            <button class="btn btn-secondary mt-1" onclick="app.nextStep(1)">← Artqa</button>
+        </div>
+    </div>
+
+    <!-- ========= STEP 3 ========= -->
+    <div id="step3Screen" class="hidden">
+        <div class="header"><div class="header-top"><div class="logo">Q<span>AR</span></div></div><div class="header-title">Registraciya</div><div class="header-sub">3-qadam / 5</div></div>
+        <div class="step-track"><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot active">3</div><div class="step-line"></div><div class="step-dot">4</div><div class="step-line"></div><div class="step-dot">5</div></div>
+        <div class="card">
+            <div class="card-title">📸 Júz tastiyıqlaw</div>
+            <p class="text-secondary mb-2">Qolıńızda pasportıńızdı uslap, tómendegi knopkanı basıń.</p>
+            <div class="camera-box">
+                <div style="font-weight:700;font-size:14px">📷 Kamera</div>
+                <div class="camera-frame" id="selfieFrame">
+                    <div style="font-size:48px">👤</div>
+                    <div style="font-size:11px;opacity:0.6">Júzińizdi shıńǵılǵa salıń</div>
+                </div>
+                <button class="camera-btn" onclick="app.simulateSelfie()">📸 Fotoni túsiriw</button>
+            </div>
+            <img id="selfiePreview" class="upload-preview">
+            <button class="btn btn-primary mt-2" onclick="app.nextStep(4)">Dawi etiw →</button>
+            <button class="btn btn-secondary mt-1" onclick="app.nextStep(2)">← Artqa</button>
+        </div>
+    </div>
+
+    <!-- ========= STEP 4 ========= -->
+    <div id="step4Screen" class="hidden">
+        <div class="header"><div class="header-top"><div class="logo">Q<span>AR</span></div></div><div class="header-title">Registraciya</div><div class="header-sub">4-qadam / 5</div></div>
+        <div class="step-track"><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot active">4</div><div class="step-line"></div><div class="step-dot">5</div></div>
+        <div class="card">
+            <div class="card-title">📍 Jaylasqan jeriniz</div>
+            <button class="btn btn-secondary" onclick="app.getLocation()">📍 GPS arqalı anıqlaw</button>
+            <div class="mt-2 text-secondary" id="locationInfo">GPS: kútilmekte...</div>
+            <button class="btn btn-primary mt-2" onclick="app.nextStep(5)">Dawi etiw →</button>
+            <button class="btn btn-secondary mt-1" onclick="app.nextStep(3)">← Artqa</button>
+        </div>
+    </div>
+
+    <!-- ========= STEP 5 ========= -->
+    <div id="step5Screen" class="hidden">
+        <div class="header"><div class="header-top"><div class="logo">Q<span>AR</span></div></div><div class="header-title">Registraciya</div><div class="header-sub">5-qadam / 5</div></div>
+        <div class="step-track"><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot completed">✓</div><div class="step-line completed"></div><div class="step-dot active">5</div></div>
+        <div class="card">
+            <div class="card-title">📋 Qoldanıw shártleri</div>
+            <div style="background:#f8f9fa;border-radius:8px;padding:16px;max-height:200px;overflow-y:auto;font-size:13px;line-height:1.8;border:2px solid #dadce0;margin-bottom:16px;">
+                <strong>QAR Platforması Qoldanıw Shártleri</strong><br><br>
+                <strong>1. Juwapkershilik:</strong> Eki tárep (beriwshi hám alıwshı) óz juwapkershiligin tolıq moyınlaydı.<br>
+                <strong>2. Zat buzılǵan jaǵdayda:</strong> Alıwshı zat ornına jańasın alıp beriwge yamasa pulın tólewge minnetli.<br>
+                <strong>3. Keshikken jaǵdayda:</strong> 24 saat ishinde qaytarmasa, avtomatik 2-kúnge uzaradı hám 2-kún pulı tólenedi.<br>
+                <strong>4. Komissiya:</strong> Hár bir mámileden 5% komissiya sheshiledi.<br>
+                <strong>5. Bloklaw:</strong> 4 ret qatarınan berilmese, akkaunt bloklanadı.<br>
+                <strong>6. Qawipsizlik:</strong> Barlıq malıwmatlar qorǵaladı, úshinshi táreplerge berilmeydi.
+            </div>
+            <div class="form-group">
+                <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer">
+                    <input type="checkbox" id="termsCheck" style="margin-top:3px;width:20px;height:20px;accent-color:#1a73e8;flex-shrink:0">
+                    <span style="font-size:14px;color:#5f6368">Men barlıq shártlerdi oqıdım hám qabıllayman.</span>
+                </label>
+            </div>
+            <button class="btn btn-success" onclick="app.completeRegistration()">✅ Registraciyanı tamamlaw</button>
+            <button class="btn btn-secondary mt-1" onclick="app.nextStep(4)">← Artqa</button>
+        </div>
+    </div>
+
+    <!-- ========= SUCCESS ========= -->
+    <div id="successScreen" class="hidden">
+        <div class="header"><div class="header-top"><div class="logo">Q<span>AR</span></div></div></div>
+        <div class="card text-center" style="padding:40px 24px;">
+            <div style="width:80px;height:80px;background:linear-gradient(135deg,#00c853,#00e676);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:40px;color:#fff;">✓</div>
+            <div style="font-size:24px;font-weight:800;">Tabıslı!</div>
+            <div class="text-secondary">Akkauntıńız jaratıldı. Tekseriwde...</div>
+            <div class="badge badge-orange mt-2">⏱ Tekseriwde - 24 saat ishinde</div>
+            <button class="btn btn-primary mt-2" onclick="app.showDashboard()">Dashboardqa ótiw</button>
+        </div>
+    </div>
+
+    <!-- ========= DASHBOARD ========= -->
+    <div id="dashboardScreen" class="hidden">
+        <div class="header">
+            <div class="header-top"><div class="logo">Q<span>AR</span></div><div style="font-size:20px">👤</div></div>
+            <div class="header-title">Bas bet</div>
+            <div class="header-sub" id="dashGreeting">Xosh keldiniz!</div>
+        </div>
+        <div class="card">
+            <div class="flex">
+                <div class="profile-avatar" id="dashAvatar">A</div>
+                <div>
+                    <div style="font-weight:700;font-size:18px" id="dashName">Alibek Temirbekov</div>
+                    <div class="text-secondary" id="dashPhone">+998 90 123 45 67</div>
+                    <div class="verify-badge" id="dashVerify">✓ Tastiyıqlanǵan</div>
+                </div>
+            </div>
+        </div>
+        <div class="kashalok-card">
+            <div>💰 QAR Kashalok</div>
+            <div class="kashalok-amount" id="kashalokBalance">500 000 so'm</div>
+            <div class="kashalok-sub">Hár bir mámileden 5% komissiya sheshiledi</div>
+            <div class="flex gap-8 mt-2">
+                <button class="btn btn-primary" onclick="app.showDepositModal()" style="flex:1">+ Pul salıw</button>
+                <button class="btn btn-secondary" onclick="app.showWithdrawModal()" style="flex:1;background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.2)">↩ Shıǵarıw</button>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+            <div class="card" style="padding:12px;text-align:center"><div style="font-weight:800;color:#1a73e8" id="statItems">0</div><div style="font-size:11px;color:#5f6368">Zatlar</div></div>
+            <div class="card" style="padding:12px;text-align:center"><div style="font-weight:800;color:#00c853" id="statIncome">0</div><div style="font-size:11px;color:#5f6368">Tabıs</div></div>
+            <div class="card" style="padding:12px;text-align:center"><div style="font-weight:800;color:#ff6d00" id="statRentals">0</div><div style="font-size:11px;color:#5f6368">Arendalar</div></div>
+            <div class="card" style="padding:12px;text-align:center"><div style="font-weight:800;color:#ea4335" id="statBlocked">0</div><div style="font-size:11px;color:#5f6368">Blok</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <button class="btn btn-success" onclick="app.showAddItem()">➕ Zat qosıw</button>
+            <button class="btn btn-primary" onclick="app.showBrowse()">🔍 Zat izlew</button>
+        </div>
+        <div class="card">
+            <div class="card-title">⏱ Aktiv arendalar</div>
+            <div id="activeRentalsList"></div>
+        </div>
+    </div>
+
+    <!-- ========= ADD ITEM ========= -->
+    <div id="addItemScreen" class="hidden">
+        <div class="header">
+            <div class="header-top"><div style="font-size:24px;cursor:pointer" onclick="app.showDashboard()">←</div><div class="logo">Q<span>AR</span></div><div style="width:40px"></div></div>
+            <div class="header-title">Jana zat</div>
+        </div>
+        <div class="card">
+            <div class="card-title">📦 Zat haqqında</div>
+            <div class="form-group"><label class="form-label">Ataması *</label><input type="text" class="form-input" id="itemName" placeholder="M: Velosiped, Kamera..."></div>
+            <div class="form-group"><label class="form-label">Kategoriya *</label>
+                <select class="form-select" id="itemCategory">
+                    <option>Transport</option><option>Texnika</option><option>Sport</option><option>Jahaz</option><option>Kiyim</option><option>Kitap</option><option>Basqa</option>
+                </select>
+            </div>
+            <div class="form-group"><label class="form-label">1 kúnlik baha (so'm) *</label><input type="number" class="form-input" id="itemPrice" placeholder="50000"></div>
+            <div class="form-group"><label class="form-label">2 kúnlik baha</label><input type="number" class="form-input" id="itemPrice2" placeholder="90000"></div>
+            <div class="form-group"><label class="form-label">1 aylıq baha</label><input type="number" class="form-input" id="itemPriceMonth" placeholder="1200000"></div>
+            <div class="form-group"><label class="form-label">Sıpatlama</label><textarea class="form-textarea" id="itemDesc" placeholder="Zattıń jaǵdayı, ózgeshelikleri..."></textarea></div>
+        </div>
+        <div class="card">
+            <div class="card-title">📷 Foto</div>
+            <div class="upload-card">
+                <div style="font-size:40px">🖼️</div>
+                <div style="font-weight:700">Foto qosıw</div>
+                <input type="file" accept="image/*" onchange="app.previewItemImage(this)">
+            </div>
+            <img id="itemImagePreview" class="upload-preview">
+        </div>
+        <button class="btn btn-success" onclick="app.addItem()">✅ Jaylastırıw</button>
+        <button class="btn btn-secondary mt-1" onclick="app.showDashboard()">← Bas bet</button>
+    </div>
+
+    <!-- ========= BROWSE ========= -->
+    <div id="browseScreen" class="hidden">
+        <div class="header">
+            <div class="header-top"><div class="logo">Q<span>AR</span></div><div style="font-size:20px">👤</div></div>
+            <div class="header-title">Zat izlew</div>
+        </div>
+        <div class="card" style="padding:12px">
+            <input type="text" class="form-input" id="searchInput" placeholder="🔍 Izdep tabıń..." oninput="app.renderBrowseItems()">
+        </div>
+        <div class="pills" id="categoryPills">
+            <div class="pill active" data-cat="all" onclick="app.filterCategory('all')">Barlıǵı</div>
+            <div class="pill" data-cat="Transport" onclick="app.filterCategory('Transport')">Transport</div>
+            <div class="pill" data-cat="Texnika" onclick="app.filterCategory('Texnika')">Texnika</div>
+            <div class="pill" data-cat="Sport" onclick="app.filterCategory('Sport')">Sport</div>
+            <div class="pill" data-cat="Jahaz" onclick="app.filterCategory('Jahaz')">Jahaz</div>
+            <div class="pill" data-cat="Kiyim" onclick="app.filterCategory('Kiyim')">Kiyim</div>
+        </div>
+        <div id="browseItemsList"></div>
+    </div>
+
+    <!-- ========= RENT ========= -->
+    <div id="rentScreen" class="hidden">
+        <div class="header">
+            <div class="header-top"><div style="font-size:24px;cursor:pointer" onclick="app.showBrowse()">←</div><div class="logo">Q<span>AR</span></div><div style="width:40px"></div></div>
+        </div>
+        <div id="rentItemDetails"></div>
+        <div class="card">
+            <div class="card-title">📅 Arenda waqtı</div>
+            <div class="form-group"><label class="form-label">Baslanıw kúni</label><input type="date" class="form-input" id="rentStart" onchange="app.calcRent()"></div>
+            <div class="form-group"><label class="form-label">Ayaqlanatuǵın kún</label><input type="date" class="form-input" id="rentEnd" onchange="app.calcRent()"></div>
+            <div style="background:#e8f0fe;border-radius:8px;padding:16px;margin-bottom:16px">
+                <div class="flex-between"><span class="text-secondary">Arenda bahası:</span><strong id="rentPrice">0 so'm</strong></div>
+                <div class="flex-between" style="border-top:2px solid #dadce0;padding-top:12px;margin-top:8px"><span>JAMI:</span><strong style="color:#1a73e8;font-size:20px" id="rentTotal">0 so'm</strong></div>
+                <div class="flex-between"><span class="text-secondary" style="font-size:12px">Komissiya (5%):</span><span id="rentFee" style="font-size:12px;color:#ff6d00">0 so'm</span></div>
+            </div>
+            <button class="btn btn-success" onclick="app.confirmRent()">✅ Arendaga alıw</button>
+            <button class="btn btn-secondary mt-1" onclick="app.showBrowse()">← Artqa</button>
+        </div>
+    </div>
+
+    <!-- ========= MY ITEMS ========= -->
+    <div id="myItemsScreen" class="hidden">
+        <div class="header">
+            <div class="header-top"><div style="font-size:24px;cursor:pointer" onclick="app.showDashboard()">←</div><div class="logo">Q<span>AR</span></div><div style="width:40px"></div></div>
+            <div class="header-title">Menıń zatlarım</div>
+        </div>
+        <div id="myItemsList"></div>
+    </div>
+
+    <!-- ========= HISTORY ========= -->
+    <div id="historyScreen" class="hidden">
+        <div class="header">
+            <div class="header-top"><div style="font-size:24px;cursor:pointer" onclick="app.showDashboard()">←</div><div class="logo">Q<span>AR</span></div><div style="width:40px"></div></div>
+            <div class="header-title">Tariyx</div>
+        </div>
+        <div class="card">
+            <div class="card-title">📜 Operaciyalar</div>
+            <div id="transactionsList"></div>
+        </div>
+    </div>
+
+    <!-- ========= ADMIN PANEL ========= -->
+    <div id="adminPanel" class="hidden">
+        <div class="header" style="background:linear-gradient(135deg,#e65100,#ff6d00)">
+            <div class="header-top"><div class="logo">Q<span>AR</span> Admin</div><div style="font-size:16px;cursor:pointer" onclick="app.showScreen('loginScreen')">🚪</div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">👑 Admin basqarıw</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+                <button class="btn btn-primary" onclick="app.adminShow('users')" style="font-size:14px;padding:12px">👤 Paydalanıwshılar</button>
+                <button class="btn btn-primary" onclick="app.adminShow('items')" style="font-size:14px;padding:12px">📦 Zatlar</button>
+                <button class="btn btn-primary" onclick="app.adminShow('rentals')" style="font-size:14px;padding:12px">📋 Arendalar</button>
+                <button class="btn btn-primary" onclick="app.adminShow('transactions')" style="font-size:14px;padding:12px">💰 Mámileler</button>
+            </div>
+            <div id="adminContent"></div>
+        </div>
+    </div>
+
+    <!-- ========= MODAL ========= -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-sheet" id="modalContent"></div>
+    </div>
+
+</div>
+
+<!-- ========= BOTTOM NAV ========= -->
+<div class="bottom-nav" id="bottomNav">
+    <div class="nav-item active" onclick="app.showDashboard()"><span class="nav-icon">🏠</span>Bas bet</div>
+    <div class="nav-item" onclick="app.showBrowse()"><span class="nav-icon">🔍</span>Izlew</div>
+    <div class="nav-item" onclick="app.showAddItem()"><span class="nav-icon">➕</span>Qosıw</div>
+    <div class="nav-item" onclick="app.showMyItems()"><span class="nav-icon">📦</span>Zatlar</div>
+    <div class="nav-item" onclick="app.showHistory()"><span class="nav-icon">📜</span>Tariyx</div>
+</div>
+
+<script>
+    // ================================================================
+    //  QAR APP с SQLite (sql.js)
+    //  Все данные хранятся в реляционной БД, сериализуются в localStorage
+    // ================================================================
+
+    const app = {
+        db: null,          // экземпляр SQLite
+        currentUser: null,
+        currentAdmin: null,
+        selectedItem: null,
+        filterCategory: 'all',
+        regData: {},
+        _itemImage: null,
+
+        // ---------- Инициализация БД ----------
+        initDB() {
+            return new Promise((resolve, reject) => {
+                // Загружаем бинарную БД из localStorage
+                const saved = localStorage.getItem('qar_sqlite_db');
+                let buffer = null;
+                if (saved) {
+                    try {
+                        const arr = saved.split(',').map(Number);
+                        buffer = new Uint8Array(arr);
+                    } catch(e) {}
+                }
+
+                // Создаём экземпляр SQLite
+                const config = {
+                    locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${filename}`
+                };
+                if (buffer) {
+                    config.buffer = buffer;
+                }
+                const self = this;
+                initSqlJs(config).then(function(SQL) {
+                    self.db = new SQL.Database(buffer ? buffer : null);
+                    self.createTables();
+                    self.saveDB();
+                    resolve();
+                }).catch(err => reject(err));
+            });
+        },
+
+        createTables() {
+            // Таблица пользователей
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    phone TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    city TEXT,
+                    address TEXT,
+                    balance INTEGER DEFAULT 0,
+                    rating INTEGER DEFAULT 0,
+                    rentCount INTEGER DEFAULT 0,
+                    failCount INTEGER DEFAULT 0,
+                    blocked INTEGER DEFAULT 0,
+                    verified INTEGER DEFAULT 0,
+                    isAdmin INTEGER DEFAULT 0,
+                    passportPhoto TEXT,
+                    selfiePhoto TEXT,
+                    lat REAL,
+                    lng REAL
+                )
+            `);
+            // Таблица предметов
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS items (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    category TEXT,
+                    priceDay INTEGER,
+                    price2Day INTEGER,
+                    priceMonth INTEGER,
+                    desc TEXT,
+                    image TEXT,
+                    ownerId INTEGER,
+                    ownerName TEXT,
+                    city TEXT,
+                    address TEXT,
+                    status TEXT DEFAULT 'available',
+                    createdAt TEXT,
+                    rating INTEGER DEFAULT 0
+                )
+            `);
+            // Таблица аренд
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS rentals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    itemId INTEGER,
+                    itemName TEXT,
+                    renterId INTEGER,
+                    ownerId INTEGER,
+                    startDate TEXT,
+                    endDate TEXT,
+                    price INTEGER,
+                    fee INTEGER,
+                    status TEXT DEFAULT 'active',
+                    createdAt TEXT
+                )
+            `);
+            // Таблица транзакций
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    userId INTEGER,
+                    type TEXT,
+                    title TEXT,
+                    amount INTEGER,
+                    date TEXT
+                )
+            `);
+
+            // Проверяем, есть ли админ, если нет – создаём
+            const adminCheck = this.db.exec("SELECT id FROM users WHERE isAdmin = 1");
+            if (adminCheck.length === 0 || adminCheck[0].values.length === 0) {
+                this.db.run(`
+                    INSERT INTO users (name, phone, password, city, address, balance, verified, isAdmin)
+                    VALUES ('Admin', 'admin', 'admin123', 'Nokis', 'Admin', 0, 1, 1)
+                `);
+            }
+            // Создаём тестового пользователя, если его нет
+            const userCheck = this.db.exec("SELECT id FROM users WHERE phone = '+998 90 123 45 67'");
+            if (userCheck.length === 0 || userCheck[0].values.length === 0) {
+                this.db.run(`
+                    INSERT INTO users (name, phone, password, city, address, balance, verified)
+                    VALUES ('Alibek Temirbekov', '+998 90 123 45 67', '123456', 'Nokis', 'Dosnazarov 15', 500000, 1)
+                `);
+            }
+        },
+
+        // Сохранить БД в localStorage (сериализация)
+        saveDB() {
+            if (!this.db) return;
+            const data = this.db.export();
+            const arr = Array.from(data);
+            localStorage.setItem('qar_sqlite_db', arr.join(','));
+        },
+
+        // ---------- Обёртки для SQL-запросов ----------
+        // Получить все строки из таблицы
+        getAll(table, where = '') {
+            const sql = `SELECT * FROM ${table} ${where}`;
+            const res = this.db.exec(sql);
+            if (res.length === 0) return [];
+            const cols = res[0].columns;
+            const rows = res[0].values;
+            return rows.map(row => {
+                const obj = {};
+                row.forEach((val, i) => { obj[cols[i]] = val; });
+                return obj;
+            });
+        },
+
+        // Получить одну строку
+        getOne(table, where) {
+            const rows = this.getAll(table, where);
+            return rows.length ? rows[0] : null;
+        },
+
+        // Выполнить запрос с параметрами (без возврата)
+        run(sql, params = []) {
+            this.db.run(sql, params);
+            this.saveDB();
+        },
+
+        // Выполнить запрос и вернуть результат (SELECT)
+        query(sql, params = []) {
+            const stmt = this.db.prepare(sql);
+            const result = [];
+            while (stmt.step()) {
+                const row = stmt.getAsObject();
+                result.push(row);
+            }
+            stmt.free();
+            return result;
+        },
+
+        // Получить последний ID вставки
+        lastInsertRowId() {
+            return this.db.exec("SELECT last_insert_rowid()")[0].values[0][0];
+        },
+
+        // ---------- Остальные методы приложения ----------
+
+        init() {
+            // Загружаем БД и после этого проверяем сессию
+            this.initDB().then(() => {
+                const session = JSON.parse(sessionStorage.getItem('qar_session'));
+                if (session) {
+                    const user = this.getOne('users', `WHERE id = ${session.userId}`);
+                    if (user && !user.blocked) {
+                        this.currentUser = user;
+                        this.showDashboard();
+                        return;
+                    }
+                }
+                this.showScreen('loginScreen');
+            }).catch(err => {
+                console.error('Ошибка инициализации БД:', err);
+                alert('Не удалось загрузить базу данных. Перезагрузите страницу.');
+            });
+        },
+
+        showScreen(id) {
+            document.querySelectorAll('.container > div').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            const nav = document.getElementById('bottomNav');
+            const hiddenScreens = ['loginScreen','step1Screen','step2Screen','step3Screen','step4Screen','step5Screen',
+                'successScreen','adminLoginScreen','adminPanel'];
+            nav.classList.toggle('hidden', hiddenScreens.includes(id));
+            window.scrollTo(0,0);
+        },
+
+        toast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(this.toastTimer);
+            this.toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+        },
+
+        // ==================== AUTH ====================
+        login() {
+            const phone = document.getElementById('loginPhone').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+            const user = this.getOne('users', `WHERE phone = '${phone}' AND password = '${pass}' AND isAdmin = 0`);
+            if (!user) { this.toast('Telefon yamasa parol qáte!'); return; }
+            if (user.blocked) { this.toast('Akkauntıńız bloklanǵan!'); return; }
+            this.currentUser = user;
+            sessionStorage.setItem('qar_session', JSON.stringify({ userId: user.id }));
+            this.toast('Xosh keldińiz!');
+            this.showDashboard();
+        },
+
+        adminLogin() {
+            const login = document.getElementById('adminLogin').value.trim();
+            const pass = document.getElementById('adminPass').value.trim();
+            const admin = this.getOne('users', `WHERE phone = '${login}' AND password = '${pass}' AND isAdmin = 1`);
+            if (!admin) { this.toast('Qáte admin malıwmatları!'); return; }
+            this.currentAdmin = admin;
+            this.showScreen('adminPanel');
+            this.adminShow('users');
+            this.toast('Admin panelge xosh keldińiz!');
+        },
+
+        // ==================== REGISTRATION ====================
+        nextStep(step) {
+            if (step === 2) {
+                const name = document.getElementById('regName').value.trim();
+                const phone = document.getElementById('regPhone').value.trim();
+                const city = document.getElementById('regCity').value;
+                const address = document.getElementById('regAddress').value.trim();
+                const pass = document.getElementById('regPass').value.trim();
+                if (!name || !phone || !city || !address || !pass) { this.toast('Barlıq maydanlardı toltırıń!'); return; }
+                const existing = this.getOne('users', `WHERE phone = '${phone}'`);
+                if (existing) { this.toast('Bul telefon dizimde bar!'); return; }
+                this.regData = { name, phone, city, address, password: pass, balance: 0, rating: 0, rentCount: 0,
+                    failCount: 0, blocked: 0, verified: 0 };
+            }
+            if (step === 3 && !this.regData.passportPhoto) { this.toast('Pasport fotosın júkleń!'); return; }
+            if (step === 4 && !this.regData.selfiePhoto) { this.toast('Selfie fotosın túsiriń!'); return; }
+            this.showScreen('step' + step + 'Screen');
+        },
+
+        previewPassport(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('passportPreview').src = e.target.result;
+                    document.getElementById('passportPreview').classList.add('show');
+                    this.regData.passportPhoto = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        },
+
+        simulateSelfie() {
+            document.getElementById('selfieFrame').innerHTML = '<div style="font-size:48px">✅</div>';
+            this.regData.selfiePhoto = 'selfie_taken';
+            this.toast('📸 Foto túsirildi!');
+        },
+
+        getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    this.regData.lat = pos.coords.latitude;
+                    this.regData.lng = pos.coords.longitude;
+                    document.getElementById('locationInfo').textContent = '📍 GPS: ' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
+                    this.toast('GPS anıqlandı!');
+                }, () => this.toast('GPS ruxsatı kerek!'));
+            } else this.toast('GPS qollanılmaydı');
+        },
+
+        completeRegistration() {
+            if (!document.getElementById('termsCheck').checked) { this.toast('Shártlerdi qabıllań!'); return; }
+            const data = this.regData;
+            this.db.run(`
+                INSERT INTO users (name, phone, password, city, address, balance, verified, passportPhoto, selfiePhoto, lat, lng)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [data.name, data.phone, data.password, data.city, data.address, 0, 0, data.passportPhoto || '', data.selfiePhoto || '', data.lat || 0, data.lng || 0]);
+            this.saveDB();
+            const newUser = this.getOne('users', `WHERE phone = '${data.phone}'`);
+            this.currentUser = newUser;
+            sessionStorage.setItem('qar_session', JSON.stringify({ userId: newUser.id }));
+            this.showScreen('successScreen');
+            this.toast('Akkaunt jaratıldı!');
+        },
+
+        // ==================== DASHBOARD ====================
+        showDashboard() {
+            if (!this.currentUser) { this.showScreen('loginScreen'); return; }
+            this.showScreen('dashboardScreen');
+            const u = this.currentUser;
+            document.getElementById('dashName').textContent = u.name;
+            document.getElementById('dashPhone').textContent = u.phone;
+            document.getElementById('dashAvatar').textContent = u.name.charAt(0);
+            document.getElementById('dashGreeting').textContent = 'Xosh keldińiz, ' + u.name + '!';
+            document.getElementById('kashalokBalance').textContent = (u.balance || 0).toLocaleString() + " so'm";
+            const verifyBadge = document.getElementById('dashVerify');
+            if (u.verified) {
+                verifyBadge.textContent = '✓ Tastiyıqlanǵan';
+                verifyBadge.className = 'verify-badge';
+            } else {
+                verifyBadge.textContent = '⏱ Tekseriwde';
+                verifyBadge.className = 'verify-badge pending';
+            }
+
+            // Статистика
+            const myItems = this.query(`SELECT COUNT(*) as cnt FROM items WHERE ownerId = ${u.id}`);
+            document.getElementById('statItems').textContent = myItems[0]?.cnt || 0;
+
+            const income = this.query(`SELECT SUM(amount) as total FROM transactions WHERE userId = ${u.id} AND type = 'in'`);
+            document.getElementById('statIncome').textContent = (income[0]?.total || 0).toLocaleString();
+
+            const rentals = this.query(`SELECT COUNT(*) as cnt FROM rentals WHERE renterId = ${u.id} AND status = 'active'`);
+            document.getElementById('statRentals').textContent = rentals[0]?.cnt || 0;
+
+            document.getElementById('statBlocked').textContent = u.blocked ? 1 : 0;
+
+            this.renderActiveRentals();
+            document.getElementById('bottomNav').classList.remove('hidden');
+        },
+
+        renderActiveRentals() {
+            const list = document.getElementById('activeRentalsList');
+            const active = this.query(`
+                SELECT * FROM rentals
+                WHERE status = 'active' AND (renterId = ${this.currentUser.id} OR ownerId = ${this.currentUser.id})
+            `);
+            if (!active.length) {
+                list.innerHTML = '<div class="text-secondary text-center" style="padding:20px">Aktiv arenda joq</div>';
+                return;
+            }
+            let html = '';
+            const now = Date.now();
+            active.forEach(r => {
+                const end = new Date(r.endDate).getTime();
+                const diff = end - now;
+                const days = Math.floor(diff / 86400000);
+                const hours = Math.floor((diff % 86400000) / 3600000);
+                const timeStr = days + 'k ' + hours + 's';
+                html += `
+                    <div class="rental-card">
+                        <div style="font-size:24px">⏱</div>
+                        <div class="rental-info">
+                            <div class="rental-name">${r.itemName}</div>
+                            <div class="text-secondary" style="font-size:12px">${r.startDate} → ${r.endDate}</div>
+                        </div>
+                        <div class="rental-timer">
+                            <div class="time">${timeStr}</div>
+                            <div class="label">qaldı</div>
+                        </div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        },
+
+        // ==================== ITEMS ====================
+        showAddItem() {
+            if (!this.currentUser) return;
+            this.showScreen('addItemScreen');
+            document.getElementById('itemImagePreview').classList.remove('show');
+            this._itemImage = null;
+        },
+
+        previewItemImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.getElementById('itemImagePreview');
+                    img.src = e.target.result;
+                    img.classList.add('show');
+                    this._itemImage = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        },
+
+        addItem() {
+            const name = document.getElementById('itemName').value.trim();
+            const category = document.getElementById('itemCategory').value;
+            const price = parseInt(document.getElementById('itemPrice').value);
+            const price2 = parseInt(document.getElementById('itemPrice2').value) || price * 2;
+            const priceMonth = parseInt(document.getElementById('itemPriceMonth').value) || price * 30;
+            const desc = document.getElementById('itemDesc').value.trim();
+            if (!name || !price) { this.toast('Atama hám baha kerek!'); return; }
+            const image = this._itemImage || 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400';
+            const ownerId = this.currentUser.id;
+            const ownerName = this.currentUser.name;
+            const city = this.currentUser.city;
+            const address = this.currentUser.address;
+            this.db.run(`
+                INSERT INTO items (name, category, priceDay, price2Day, priceMonth, desc, image, ownerId, ownerName, city, address, status, createdAt)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available', ?)
+            `, [name, category, price, price2, priceMonth, desc, image, ownerId, ownerName, city, address, new Date().toISOString()]);
+            this.saveDB();
+            this.toast('✅ Zat jaylastırıldı!');
+            this.showDashboard();
+        },
+
+        showMyItems() {
+            if (!this.currentUser) return;
+            this.showScreen('myItemsScreen');
+            const list = document.getElementById('myItemsList');
+            const myItems = this.query(`SELECT * FROM items WHERE ownerId = ${this.currentUser.id}`);
+            if (!myItems.length) {
+                list.innerHTML = '<div class="text-secondary text-center" style="padding:20px">Sizde ele zat joq</div>';
+                return;
+            }
+            let html = '';
+            myItems.forEach(item => {
+                html += `
+                    <div class="item-card">
+                        <img class="item-image" src="${item.image}" alt="${item.name}">
+                        <div class="item-body">
+                            <div class="item-title">${item.name}</div>
+                            <div class="item-price">${item.priceDay.toLocaleString()} so'm <span>/ kún</span></div>
+                            <div class="item-meta">📍 ${item.city}</div>
+                            <span class="badge badge-green">✓ ${item.status}</span>
+                            <button class="btn btn-danger mt-1" onclick="app.deleteItem(${item.id})">🗑 Óshiriw</button>
+                        </div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        },
+
+        deleteItem(id) {
+            if (!confirm('Zattı óshiresiz be?')) return;
+            this.db.run(`DELETE FROM items WHERE id = ?`, [id]);
+            this.saveDB();
+            this.showMyItems();
+            this.toast('Zat óshirildi!');
+        },
+
+        // ==================== BROWSE ====================
+        showBrowse() {
+            this.showScreen('browseScreen');
+            this.renderBrowseItems();
+        },
+
+        filterCategory(cat) {
+            this.filterCategory = cat;
+            document.querySelectorAll('#categoryPills .pill').forEach(el => {
+                el.classList.toggle('active', el.dataset.cat === cat);
+            });
+            this.renderBrowseItems();
+        },
+
+        renderBrowseItems() {
+            const list = document.getElementById('browseItemsList');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            let sql = `SELECT * FROM items WHERE status = 'available'`;
+            if (this.filterCategory !== 'all') {
+                sql += ` AND category = '${this.filterCategory}'`;
+            }
+            if (search) {
+                sql += ` AND LOWER(name) LIKE '%${search}%'`;
+            }
+            const items = this.query(sql);
+            if (!items.length) {
+                list.innerHTML = '<div class="text-secondary text-center" style="padding:20px">Zat tabılmadı</div>';
+                return;
+            }
+            let html = '';
+            items.forEach(item => {
+                // Для рейтинга нет отдельной таблицы, используем заглушку
+                const stars = '⭐⭐⭐⭐⭐';
+                html += `
+                    <div class="item-card" onclick="app.showRent(${item.id})">
+                        <img class="item-image" src="${item.image}" alt="${item.name}">
+                        <div class="item-body">
+                            <div class="item-title">${item.name}</div>
+                            <div class="item-price">${item.priceDay.toLocaleString()} so'm <span>/ kún</span></div>
+                            <div class="item-meta">📍 ${item.city} | 👤 ${item.ownerName}</div>
+                            <div class="stars">${stars}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        },
+
+        // ==================== RENT ====================
+        showRent(id) {
+            const item = this.getOne('items', `WHERE id = ${id}`);
+            if (!item) return;
+            if (item.ownerId === this.currentUser.id) { this.toast('Óz zattı arendaga ala almaysız!'); return; }
+            this.selectedItem = item;
+            this.showScreen('rentScreen');
+            const details = document.getElementById('rentItemDetails');
+            details.innerHTML = `
+                <div class="item-card">
+                    <img class="item-image" src="${item.image}">
+                    <div class="item-body">
+                        <div class="item-title">${item.name}</div>
+                        <div class="item-price">${item.priceDay.toLocaleString()} so'm <span>/ kún</span></div>
+                        <div class="item-meta">📍 ${item.city} | 👤 ${item.ownerName}</div>
+                        <div class="text-secondary">${item.desc || ''}</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('rentStart').value = '';
+            document.getElementById('rentEnd').value = '';
+            document.getElementById('rentPrice').textContent = '0 so\'m';
+            document.getElementById('rentTotal').textContent = '0 so\'m';
+            document.getElementById('rentFee').textContent = '0 so\'m';
+        },
+
+        calcRent() {
+            const start = document.getElementById('rentStart').value;
+            const end = document.getElementById('rentEnd').value;
+            if (!start || !end || !this.selectedItem) return;
+            const days = Math.max(1, Math.ceil((new Date(end) - new Date(start)) / 86400000));
+            const price = days * this.selectedItem.priceDay;
+            const fee = Math.round(price * 0.05);
+            document.getElementById('rentPrice').textContent = price.toLocaleString() + " so'm";
+            document.getElementById('rentFee').textContent = fee.toLocaleString() + " so'm";
+            document.getElementById('rentTotal').textContent = (price + fee).toLocaleString() + " so'm";
+        },
+
+        confirmRent() {
+            const start = document.getElementById('rentStart').value;
+            const end = document.getElementById('rentEnd').value;
+            if (!start || !end) { this.toast('Kúnlerdi tańlań!'); return; }
+            const days = Math.max(1, Math.ceil((new Date(end) - new Date(start)) / 86400000));
+            const price = days * this.selectedItem.priceDay;
+            const fee = Math.round(price * 0.05);
+            const total = price + fee;
+
+            if (this.currentUser.balance < total) { this.toast('Kashalok balansı jetkisiz!'); return; }
+
+            // Проверка блокировки владельца
+            const owner = this.getOne('users', `WHERE id = ${this.selectedItem.ownerId}`);
+            if (owner && owner.blocked) { this.toast('Zat iyesi bloklanǵan!'); return; }
+
+            // Создаём аренду
+            this.db.run(`
+                INSERT INTO rentals (itemId, itemName, renterId, ownerId, startDate, endDate, price, fee, status, createdAt)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
+            `, [this.selectedItem.id, this.selectedItem.name, this.currentUser.id, this.selectedItem.ownerId,
+                start, end, price, fee, new Date().toISOString()
+            ]);
+            const rentalId = this.lastInsertRowId();
+
+            // Обновляем балансы
+            this.db.run(`UPDATE users SET balance = balance - ? WHERE id = ?`, [total, this.currentUser.id]);
+            this.db.run(`UPDATE users SET balance = balance + ? WHERE id = ?`, [price, this.selectedItem.ownerId]);
+
+            // Обновляем статус предмета
+            this.db.run(`UPDATE items SET status = 'rented' WHERE id = ?`, [this.selectedItem.id]);
+
+            // Транзакции
+            const now = new Date().toISOString();
+            this.db.run(`
+                INSERT INTO transactions (userId, type, title, amount, date)
+                VALUES (?, 'out', ?, ?, ?)
+            `, [this.currentUser.id, 'Arenda: ' + this.selectedItem.name, -price, now]);
+            this.db.run(`
+                INSERT INTO transactions (userId, type, title, amount, date)
+                VALUES (?, 'fee', 'Komissiya (5%)', ?, ?)
+            `, [this.currentUser.id, -fee, now]);
+            if (owner) {
+                this.db.run(`
+                    INSERT INTO transactions (userId, type, title, amount, date)
+                    VALUES (?, 'in', 'Arenda: ' + ?, ?, ?)
+                `, [owner.id, this.selectedItem.name, price, now]);
+            }
+
+            this.saveDB();
+
+            // Обновляем текущего пользователя
+            this.currentUser = this.getOne('users', `WHERE id = ${this.currentUser.id}`);
+            this.toast('✅ Arenda tabıslı!');
+            this.showDashboard();
+        },
+
+        // ==================== HISTORY ====================
+        showHistory() {
+            this.showScreen('historyScreen');
+            const list = document.getElementById('transactionsList');
+            const txs = this.query(`
+                SELECT * FROM transactions WHERE userId = ${this.currentUser.id} ORDER BY date DESC
+            `);
+            if (!txs.length) {
+                list.innerHTML = '<div class="text-secondary text-center" style="padding:20px">Tariyx joq</div>';
+                return;
+            }
+            let html = '';
+            txs.forEach(t => {
+                const icon = t.type === 'in' ? '⬇' : (t.type === 'out' ? '⬆' : '💸');
+                const cls = t.type;
+                const sign = t.amount > 0 ? '+' : '';
+                html += `
+                    <div class="tx-card">
+                        <div class="tx-icon ${cls}">${icon}</div>
+                        <div class="tx-info">
+                            <div class="tx-title">${t.title}</div>
+                            <div class="tx-date">${t.date.slice(0,10)}</div>
+                        </div>
+                        <div class="tx-amount ${cls}">${sign}${t.amount.toLocaleString()} so'm</div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        },
+
+        // ==================== KASHALOK ====================
+        showDepositModal() {
+            this.showModal('Pul salıw', `
+                <div class="form-group"><label class="form-label">Miqdarı (so'm)</label><input type="number" class="form-input" id="depositAmount" placeholder="50000"></div>
+                <button class="btn btn-success" onclick="app.deposit()">Tastiyıqlaw</button>
+            `);
+        },
+
+        showWithdrawModal() {
+            this.showModal('Pul shıǵarıw', `
+                <div class="form-group"><label class="form-label">Miqdarı (so'm)</label><input type="number" class="form-input" id="withdrawAmount" placeholder="50000"></div>
+                <button class="btn btn-primary" onclick="app.withdraw()">Tastiyıqlaw</button>
+            `);
+        },
+
+        deposit() {
+            const amount = parseInt(document.getElementById('depositAmount').value);
+            if (!amount || amount <= 0) { this.toast('Miqdardı kiritiń!'); return; }
+            this.db.run(`UPDATE users SET balance = balance + ? WHERE id = ?`, [amount, this.currentUser.id]);
+            this.db.run(`
+                INSERT INTO transactions (userId, type, title, amount, date)
+                VALUES (?, 'in', 'Kashalok tolıqtırıw', ?, ?)
+            `, [this.currentUser.id, amount, new Date().toISOString()]);
+            this.saveDB();
+            this.currentUser = this.getOne('users', `WHERE id = ${this.currentUser.id}`);
+            this.closeModal();
+            this.toast('✅ ' + amount.toLocaleString() + " so'm salındı!");
+            this.showDashboard();
+        },
+
+        withdraw() {
+            const amount = parseInt(document.getElementById('withdrawAmount').value);
+            if (!amount || amount <= 0) { this.toast('Miqdardı kiritiń!'); return; }
+            if (amount > this.currentUser.balance) { this.toast('Balans jetkisiz!'); return; }
+            this.db.run(`UPDATE users SET balance = balance - ? WHERE id = ?`, [amount, this.currentUser.id]);
+            this.db.run(`
+                INSERT INTO transactions (userId, type, title, amount, date)
+                VALUES (?, 'out', 'Pul shıǵarıw', ?, ?)
+            `, [this.currentUser.id, -amount, new Date().toISOString()]);
+            this.saveDB();
+            this.currentUser = this.getOne('users', `WHERE id = ${this.currentUser.id}`);
+            this.closeModal();
+            this.toast('✅ ' + amount.toLocaleString() + " so'm shıǵarıldı!");
+            this.showDashboard();
+        },
+
+        // ==================== MODAL ====================
+        showModal(title, content) {
+            document.getElementById('modalContent').innerHTML = `
+                <div class="modal-title">${title}</div>
+                ${content}
+                <button class="btn btn-secondary mt-1" onclick="app.closeModal()">Biykarlaw</button>
+            `;
+            document.getElementById('modalOverlay').classList.add('show');
+        },
+
+        closeModal() {
+            document.getElementById('modalOverlay').classList.remove('show');
+        },
+
+        // ==================== ADMIN ====================
+        adminShow(section) {
+            const container = document.getElementById('adminContent');
+            if (section === 'users') {
+                let html = '<div class="card-title">👤 Paydalanıwshılar</div>';
+                const users = this.query(`SELECT * FROM users WHERE isAdmin = 0`);
+                users.forEach(u => {
+                    html += `
+                        <div class="admin-card">
+                            <div class="title">${u.name}</div>
+                            <div>📱 ${u.phone} | 📍 ${u.city}</div>
+                            <div>💰 ${(u.balance || 0).toLocaleString()} so'm | ⭐ ${u.rating || 0}</div>
+                            <div>🔒 ${u.verified ? '✅ Tastiyıqlanǵan' : '⏱ Tekseriwde'}</div>
+                            <div class="flex gap-8 mt-1">
+                                <button class="btn btn-primary" style="padding:8px;font-size:13px" onclick="app.adminVerify(${u.id})">✅ Tastiyıqlaw</button>
+                                <button class="btn btn-danger" style="padding:8px;font-size:13px" onclick="app.adminBlock(${u.id})">🚫 Bloklaw</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else if (section === 'items') {
+                let html = '<div class="card-title">📦 Zatlar</div>';
+                const items = this.query(`SELECT * FROM items`);
+                items.forEach(i => {
+                    html += `
+                        <div class="admin-card">
+                            <div class="title">${i.name}</div>
+                            <div>📂 ${i.category} | 📍 ${i.city}</div>
+                            <div>💰 ${i.priceDay.toLocaleString()} so'm/kún | 📊 ${i.status}</div>
+                            <div>👤 ${i.ownerName}</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else if (section === 'rentals') {
+                let html = '<div class="card-title">📋 Arendalar</div>';
+                const rentals = this.query(`SELECT * FROM rentals`);
+                rentals.forEach(r => {
+                    const renter = this.getOne('users', `WHERE id = ${r.renterId}`);
+                    const owner = this.getOne('users', `WHERE id = ${r.ownerId}`);
+                    html += `
+                        <div class="admin-card">
+                            <div class="title">${r.itemName}</div>
+                            <div>👤 Alǵan: ${renter?.name || r.renterId}</div>
+                            <div>👤 Beriwshi: ${owner?.name || r.ownerId}</div>
+                            <div>📅 ${r.startDate} → ${r.endDate}</div>
+                            <div>💰 ${r.price.toLocaleString()} so'm | ${r.status}</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else if (section === 'transactions') {
+                let html = '<div class="card-title">💰 Mámileler</div>';
+                const txs = this.query(`SELECT * FROM transactions ORDER BY date DESC`);
+                txs.forEach(t => {
+                    const user = this.getOne('users', `WHERE id = ${t.userId}`);
+                    const icon = t.type === 'in' ? '⬇' : (t.type === 'out' ? '⬆' : '💸');
+                    const cls = t.type;
+                    html += `
+                        <div class="tx-card">
+                            <div class="tx-icon ${cls}">${icon}</div>
+                            <div class="tx-info">
+                                <div class="tx-title">${t.title}</div>
+                                <div class="tx-date">${t.date.slice(0,10)} | ${user?.name || t.userId}</div>
+                            </div>
+                            <div class="tx-amount ${cls}">${t.amount>0?'+':''}${t.amount.toLocaleString()} so'm</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+        },
+
+        adminVerify(id) {
+            this.db.run(`UPDATE users SET verified = 1 WHERE id = ?`, [id]);
+            this.saveDB();
+            this.toast('Tastiyıqlandı!');
+            this.adminShow('users');
+        },
+
+        adminBlock(id) {
+            const user = this.getOne('users', `WHERE id = ${id}`);
+            if (user) {
+                const newBlocked = user.blocked ? 0 : 1;
+                this.db.run(`UPDATE users SET blocked = ? WHERE id = ?`, [newBlocked, id]);
+                this.saveDB();
+                this.toast(newBlocked ? 'Bloklandı!' : 'Blok ashıldı!');
+                this.adminShow('users');
+            }
+        },
+
+        // ==================== TIMER CHECK ====================
+        checkTimers() {
+            const now = Date.now();
+            let updated = false;
+            const activeRentals = this.query(`SELECT * FROM rentals WHERE status = 'active'`);
+            activeRentals.forEach(r => {
+                const end = new Date(r.endDate).getTime();
+                if (now > end) {
+                    // Автоматическое продление на 2 дня
+                    const newEnd = new Date(end + 86400000);
+                    const newEndStr = newEnd.toISOString().slice(0,10);
+                    this.db.run(`UPDATE rentals SET endDate = ? WHERE id = ?`, [newEndStr, r.id]);
+
+                    // Дополнительная плата за день
+                    const diffDays = Math.ceil((newEnd - new Date(r.startDate).getTime()) / 86400000);
+                    const extra = r.price / diffDays; // примерно
+                    const renter = this.getOne('users', `WHERE id = ${r.renterId}`);
+                    if (renter) {
+                        this.db.run(`UPDATE users SET balance = balance - ? WHERE id = ?`, [extra, r.renterId]);
+                        const owner = this.getOne('users', `WHERE id = ${r.ownerId}`);
+                        if (owner) {
+                            this.db.run(`UPDATE users SET balance = balance + ? WHERE id = ?`, [extra, r.ownerId]);
+                        }
+                        this.db.run(`
+                            INSERT INTO transactions (userId, type, title, amount, date)
+                            VALUES (?, 'out', 'Avtomatik uzartıw: ' || ?, ?, ?)
+                        `, [r.renterId, r.itemName, -extra, new Date().toISOString()]);
+                    }
+                    updated = true;
+                    this.toast('⏱ ' + r.itemName + ' avtomatik 2-kúnge uzartıldı!');
+                }
+            });
+            if (updated) {
+                this.saveDB();
+                // Обновляем текущего пользователя
+                if (this.currentUser) {
+                    this.currentUser = this.getOne('users', `WHERE id = ${this.currentUser.id}`);
+                }
+            }
+        }
+    };
+
+    // ==================== START APP ====================
+    document.addEventListener('DOMContentLoaded', () => {
+        app.init();
+        setInterval(() => app.checkTimers(), 300000);
+    });
+
+    // Закрытие модалки по клику на фон
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) app.closeModal();
+    });
+</script>
+</body>
+</html>
